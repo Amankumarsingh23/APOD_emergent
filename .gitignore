@@ -78,3 +78,8 @@ agenthub/agents/youtube/db
 
 # Mobile development
 android-sdk/ app.zip
+-e 
+# Environment files
+*.env
+*.env.*
+app.zip
