@@ -149,7 +149,7 @@ async def add_favorite(favorite: FavoriteCreate):
 @api_router.get("/favorites", response_model=List[Favorite])
 async def get_favorites():
     """Get all favorites sorted by created_at descending"""
-    favorites = await db.favorites.find().sort("created_at", -1).to_list(1000)
+    favorites = await db.favorites.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return [Favorite(**fav) for fav in favorites]
 
 @api_router.get("/favorites/check/{date}")
@@ -208,7 +208,7 @@ async def create_status_check(input: StatusCheckCreate):
 
 @api_router.get("/status", response_model=List[StatusCheck])
 async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
+    status_checks = await db.status_checks.find({}, {"_id": 0}).sort("timestamp", -1).to_list(50)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
 # Include the router in the main app
