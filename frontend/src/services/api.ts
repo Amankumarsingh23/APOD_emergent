@@ -42,6 +42,11 @@ export const getAPODByDate = async (date: string): Promise<APODData> => {
   return response.data;
 };
 
+export const getRandomAPOD = async (): Promise<APODData> => {
+  const response = await api.get('/apod/random');
+  return response.data;
+};
+
 // Favorites Endpoints
 export const getFavorites = async (): Promise<Favorite[]> => {
   const response = await api.get('/favorites');

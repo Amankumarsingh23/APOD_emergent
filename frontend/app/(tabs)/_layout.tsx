@@ -24,7 +24,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: theme.accent,
         tabBarInactiveTintColor: theme.textSecondary,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
         },
       }}
@@ -35,6 +35,15 @@ export default function TabLayout() {
           title: 'Today',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="planet" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="random"
+        options={{
+          title: 'Random',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="shuffle" size={size} color={color} />
           ),
         }}
       />

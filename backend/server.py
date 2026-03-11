@@ -8,8 +8,9 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 import httpx
+import random
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -124,6 +125,38 @@ async def get_apod_by_date(date: str):
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 400:
             raise HTTPException(status_code=400, detail="Invalid date format or date out of range")
+        logger.error(f"NASA API error: {e.response.status_code}")
+        raise HTTPException(status_code=e.response.status_code, detail="NASA API error")
+    except httpx.RequestError as e:
+        logger.error(f"Request error: {str(e)}")
+        raise HTTPException(status_code=503, detail="Unable to connect to NASA API")
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/apod/random", response_model=APODResponse)
+async def get_random_apod():
+    """Fetch a random APOD from the archive (June 16, 1995 to today)"""
+    try:
+        # APOD started on June 16, 1995
+        start_date = datetime(1995, 6, 16)
+        end_date = datetime.now()
+        
+        # Calculate random date
+        time_between = end_date - start_date
+        random_days = random.randint(0, time_between.days)
+        random_date = start_date + timedelta(days=random_days)
+        date_str = random_date.strftime("%Y-%m-%d")
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                NASA_APOD_BASE_URL,
+                params={"api_key": NASA_API_KEY, "date": date_str}
+            )
+            response.raise_for_status()
+            data = response.json()
+            return APODResponse(**data)
+    except httpx.HTTPStatusError as e:
         logger.error(f"NASA API error: {e.response.status_code}")
         raise HTTPException(status_code=e.response.status_code, detail="NASA API error")
     except httpx.RequestError as e:
