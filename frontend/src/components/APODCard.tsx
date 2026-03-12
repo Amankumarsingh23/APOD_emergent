@@ -13,7 +13,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import { useAppStore } from '../store/appStore';
 import { APODData, addFavorite, removeFavorite, checkFavorite } from '../services/api';
@@ -71,55 +71,64 @@ export const APODCard: React.FC<APODCardProps> = ({
   };
 
   const handleShare = async () => {
-    try {
-      const shareMessage = `${apod.title}\n\nDate: ${apod.date}\n\n${apod.explanation.substring(0, 200)}...\n\nView more: ${apod.url}`;
-      
-      if (await Sharing.isAvailableAsync()) {
-        // Download image first
-        const filename = `apod_${apod.date}.jpg`;
-        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-        
-        await FileSystem.downloadAsync(apod.url, fileUri);
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'image/jpeg',
-          dialogTitle: apod.title,
-        });
-      } else {
-        Alert.alert('Sharing not available', 'Sharing is not available on this device');
-      }
-    } catch (error) {
-      console.error('Error sharing:', error);
-      Alert.alert('Error', 'Failed to share image');
+  try {
+    const isAvailable = await Sharing.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert('Sharing not available', 'Sharing is not available on this device');
+      return;
     }
-  };
+
+    const filename = `apod_${apod.date}.jpg`;
+    const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    if (!fileInfo.exists) {
+      await FileSystem.downloadAsync(apod.url, fileUri);
+    }
+
+    await Sharing.shareAsync(fileUri, {
+      mimeType: 'image/jpeg',
+      dialogTitle: apod.title,
+    });
+  } catch (error) {
+    console.error('Error sharing:', error);
+    Alert.alert('Error', 'Failed to share image');
+  }
+};
 
   const handleSetWallpaper = async () => {
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant media library access to save the image');
-        return;
-      }
-
-      setIsLoading(true);
-      const filename = `apod_${apod.date}.jpg`;
-      const fileUri = `${FileSystem.documentDirectory}${filename}`;
-
-      await FileSystem.downloadAsync(apod.hdurl || apod.url, fileUri);
-      const asset = await MediaLibrary.createAssetAsync(fileUri);
-      
+  try {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status !== 'granted') {
       Alert.alert(
-        'Image Saved!',
-        'The image has been saved to your gallery. You can set it as wallpaper from your device settings.',
-        [{ text: 'OK' }]
+        'Permission needed',
+        'Please grant media library access to save the image',
+        [
+          { text: 'Cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() }
+        ]
       );
-    } catch (error) {
-      console.error('Error setting wallpaper:', error);
-      Alert.alert('Error', 'Failed to save image');
-    } finally {
-      setIsLoading(false);
+      return;
     }
-  };
+
+    setIsLoading(true);
+    const filename = `apod_${apod.date}.jpg`;
+    const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    if (!fileInfo.exists) {
+      await FileSystem.downloadAsync(apod.hdurl || apod.url, fileUri);
+    }
+
+    await MediaLibrary.createAssetAsync(fileUri);
+    Alert.alert('Image Saved!', 'The image has been saved to your gallery.');
+  } catch (error) {
+    console.error('Error saving:', error);
+    Alert.alert('Error', 'Failed to save image');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleLearnMore = () => {
     const searchTerm = encodeURIComponent(apod.title.replace(/\s+/g, '_'));
