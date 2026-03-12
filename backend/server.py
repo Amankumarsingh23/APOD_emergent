@@ -89,9 +89,30 @@ async def root():
     return {"message": "APOD Explorer API"}
 
 # NASA APOD Proxy Endpoints
+# @api_router.get("/apod/today", response_model=APODResponse)
+# async def get_today_apod():
+#     """Fetch today's Astronomy Picture of the Day"""
+#     try:
+#         async with httpx.AsyncClient(timeout=30.0) as client:
+#             response = await client.get(
+#                 NASA_APOD_BASE_URL,
+#                 params={"api_key": NASA_API_KEY}
+#             )
+#             response.raise_for_status()
+#             data = response.json()
+#             return APODResponse(**data)
+#     except httpx.HTTPStatusError as e:
+#         logger.error(f"NASA API error: {e.response.status_code}")
+#         raise HTTPException(status_code=e.response.status_code, detail="NASA API error")
+#     except httpx.RequestError as e:
+#         logger.error(f"Request error: {str(e)}")
+#         raise HTTPException(status_code=503, detail="Unable to connect to NASA API")
+#     except Exception as e:
+#         logger.error(f"Unexpected error: {str(e)}")
+#         raise HTTPException(status_code=500, detail=str(e))
 @api_router.get("/apod/today", response_model=APODResponse)
 async def get_today_apod():
-    """Fetch today's Astronomy Picture of the Day"""
+    """Fetch today's Astronomy Picture of the Day, fallback to yesterday if video"""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(
@@ -100,6 +121,17 @@ async def get_today_apod():
             )
             response.raise_for_status()
             data = response.json()
+            
+            # If today is a video, fetch yesterday instead
+            if data.get('media_type') == 'video':
+                yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+                response = await client.get(
+                    NASA_APOD_BASE_URL,
+                    params={"api_key": NASA_API_KEY, "date": yesterday}
+                )
+                response.raise_for_status()
+                data = response.json()
+            
             return APODResponse(**data)
     except httpx.HTTPStatusError as e:
         logger.error(f"NASA API error: {e.response.status_code}")
