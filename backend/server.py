@@ -21,7 +21,8 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # NASA API Key
-NASA_API_KEY = os.environ.get('NASA_API_KEY', 'YaeTkdGozgtqBzRQTn50IIxV4YZLxaGMr417d3cG')
+# NASA_API_KEY = os.environ.get('NASA_API_KEY', 'YaeTkdGozgtqBzRQTn50IIxV4YZLxaGMr417d3cG')
+NASA_API_KEY = os.environ.get('NASA_API_KEY', 'uFU8end2FrMVIxtpchDmXgrUzCGT7DzO9YRRgDaq')
 NASA_APOD_BASE_URL = "https://api.nasa.gov/planetary/apod"
 
 # Create the main app without a prefix
